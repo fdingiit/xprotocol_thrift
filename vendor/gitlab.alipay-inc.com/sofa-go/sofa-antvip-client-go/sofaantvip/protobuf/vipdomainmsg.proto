@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package antvip;
+
+message VipDomainMsg {
+    string name = 1;
+    int32 healthCheckDefaultPort = 2;
+    int32 protectThreshold = 3;
+    int64 version = 4;
+    message RealNodeMsg {
+        string ip = 1;
+        int32 weight = 2;
+        bool available = 3;
+        string zone = 4;
+        int32 healthCheckPort = 5;
+    }
+    repeated RealNodeMsg realNodes = 5;
+}
