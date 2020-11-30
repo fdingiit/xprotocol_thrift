@@ -16,6 +16,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/golang/protobuf/ptypes"
+
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
 // ensure the imports are used
@@ -31,6 +33,8 @@ var (
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
 	_ = ptypes.DynamicAny{}
+
+	_ = core.ConfigStatus(0)
 )
 
 // define the regex for a UUID once up-front
@@ -449,6 +453,8 @@ func (m *Cluster) Validate() error {
 	}
 
 	// no validation rules for TrackTimeoutBudgets
+
+	// no validation rules for Status
 
 	switch m.ClusterDiscoveryType.(type) {
 

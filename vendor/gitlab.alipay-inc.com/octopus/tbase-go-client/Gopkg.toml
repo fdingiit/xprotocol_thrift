@@ -1,0 +1,12 @@
+[[constraint]]
+  name = "gitlab.alipay-inc.com/octopus/radix"
+  source = "git@gitlab.alipay-inc.com:octopus/radix.git"
+  version = "tv3.2.4"
+
+[[constraint]]
+  name = "mosn.io/pkg"
+  branch = "master"
+
+[prune]
+  go-tests = true
+  unused-packages = true

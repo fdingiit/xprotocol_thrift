@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package antvip;
+
+message PollingRequestMsg {
+    string from = 1;
+    string clientVersion = 2;
+    string nameListCheckSum = 3;
+    bool allowPolling = 4;
+    map<string, string> vipDomainName2ChecksumMap = 5;
+    map<string, string> extensionParams = 6;
+    int64 startTime = 7;
+    int64 acceptTime = 8;
+}
