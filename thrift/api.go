@@ -17,7 +17,12 @@
 
 package main
 
-import "mosn.io/mosn/pkg/types"
+import (
+	"context"
+
+	"mosn.io/mosn/pkg/protocol/xprotocol"
+	"mosn.io/mosn/pkg/types"
+)
 
 // NewRpcRequest is a utility function which build rpc Request object of thrift protocol.
 func NewRpcRequest(requestId uint32, headers types.HeaderMap, data types.IoBuffer) *Request {
@@ -75,4 +80,39 @@ func NewRpcResponse(requestId uint32, statusCode uint16, headers types.HeaderMap
 		response.Content = data
 	}
 	return response
+}
+
+func Encode(ctx context.Context, model interface{}) (types.IoBuffer, error) {
+	proc := xprotocol.GetProtocol(ProtocolName)
+	return proc.Encode(ctx, model)
+}
+
+func Decode(ctx context.Context, data types.IoBuffer) (interface{}, error) {
+	proc := xprotocol.GetProtocol(ProtocolName)
+	return proc.Decode(ctx, data)
+}
+
+func Name() types.ProtocolName {
+	proc := xprotocol.GetProtocol(ProtocolName)
+	return proc.Name()
+}
+
+func Trigger(requestId uint64) xprotocol.XFrame {
+	proc := xprotocol.GetProtocol(ProtocolName)
+	return proc.Trigger(requestId)
+}
+
+func Reply(request xprotocol.XFrame) xprotocol.XRespFrame {
+	proc := xprotocol.GetProtocol(ProtocolName)
+	return proc.Reply(request)
+}
+
+func Hijack(request xprotocol.XFrame, statusCode uint32) xprotocol.XRespFrame {
+	proc := xprotocol.GetProtocol(ProtocolName)
+	return proc.Hijack(request, statusCode)
+}
+
+func Mapping(httpStatusCode uint32) uint32 {
+	proc := xprotocol.GetProtocol(ProtocolName)
+	return proc.Mapping(httpStatusCode)
 }

@@ -66,7 +66,7 @@ import (
  */
 
 func init() {
-	xprotocol.RegisterProtocol(ProtocolName, &thriftProtocol{})
+	xprotocol.RegisterProtocol(ProtocolName, &ThriftProtocol{})
 }
 
 const (
@@ -85,14 +85,16 @@ type Message struct {
 	SeqId   int32
 }
 
-type thriftProtocol struct{}
+type ThriftProtocol struct{}
 
 // types.Protocol
-func (proto *thriftProtocol) Name() types.ProtocolName {
+func (proto *ThriftProtocol) Name() types.ProtocolName {
 	return ProtocolName
 }
 
-func (proto *thriftProtocol) Encode(ctx context.Context, model interface{}) (types.IoBuffer, error) {
+func (proto *ThriftProtocol) Encode(ctx context.Context, model interface{}) (types.IoBuffer, error) {
+	ProtocolLogger.Infof("Encode: %+v\n", model)
+
 	switch frame := model.(type) {
 	case *Request:
 		return encodeRequest(ctx, frame)
@@ -119,7 +121,7 @@ func messageType(b byte) byte {
 	}
 }
 
-func (proto *thriftProtocol) decodeMessage(ctx context.Context, data types.IoBuffer) (Message, error) {
+func (proto *ThriftProtocol) decodeMessage(ctx context.Context, data types.IoBuffer) (Message, error) {
 	bytesLen := data.Len()
 	bytes := data.Bytes()
 
@@ -144,7 +146,9 @@ func (proto *thriftProtocol) decodeMessage(ctx context.Context, data types.IoBuf
 	}, nil
 }
 
-func (proto *thriftProtocol) Decode(ctx context.Context, data types.IoBuffer) (interface{}, error) {
+func (proto *ThriftProtocol) Decode(ctx context.Context, data types.IoBuffer) (interface{}, error) {
+	ProtocolLogger.Infof("Decode: %+v\n", data)
+
 	if data.Len() >= MessageMinLen {
 		message, err := proto.decodeMessage(ctx, data)
 		if err != nil {
@@ -172,7 +176,7 @@ func (proto *thriftProtocol) Decode(ctx context.Context, data types.IoBuffer) (i
 }
 
 // Heartbeater
-func (proto *thriftProtocol) Trigger(requestId uint64) xprotocol.XFrame {
+func (proto *ThriftProtocol) Trigger(requestId uint64) xprotocol.XFrame {
 	request := &Request{
 		RequestHeader: RequestHeader{
 			Protocol: ProtocolCode,
@@ -196,7 +200,7 @@ func (proto *thriftProtocol) Trigger(requestId uint64) xprotocol.XFrame {
 	return request
 }
 
-func (proto *thriftProtocol) Reply(request xprotocol.XFrame) xprotocol.XRespFrame {
+func (proto *ThriftProtocol) Reply(request xprotocol.XFrame) xprotocol.XRespFrame {
 	response := &Response{
 		ResponseHeader: ResponseHeader{
 			Protocol: ProtocolCode,
@@ -220,7 +224,7 @@ func (proto *thriftProtocol) Reply(request xprotocol.XFrame) xprotocol.XRespFram
 }
 
 // Hijacker
-func (proto *thriftProtocol) Hijack(request xprotocol.XFrame, statusCode uint32) xprotocol.XRespFrame {
+func (proto *ThriftProtocol) Hijack(request xprotocol.XFrame, statusCode uint32) xprotocol.XRespFrame {
 	return &Response{
 		ResponseHeader: ResponseHeader{
 			Protocol: ProtocolCode,
@@ -234,7 +238,7 @@ func (proto *thriftProtocol) Hijack(request xprotocol.XFrame, statusCode uint32)
 	}
 }
 
-func (proto *thriftProtocol) Mapping(httpStatusCode uint32) uint32 {
+func (proto *ThriftProtocol) Mapping(httpStatusCode uint32) uint32 {
 	switch httpStatusCode {
 	case http.StatusOK:
 		return uint32(ResponseStatusSuccess)
