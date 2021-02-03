@@ -20,8 +20,9 @@ package main
 import (
 	"context"
 
-	mbuffer "mosn.io/mosn/pkg/buffer"
 	"mosn.io/pkg/buffer"
+
+	mbuffer "github.com/fdingiit/xprotocol_thrift/pkg/buffer"
 )
 
 var ins thriftBufferCtx

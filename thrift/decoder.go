@@ -22,7 +22,6 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"mosn.io/mosn/pkg/types"
 	"mosn.io/pkg/buffer"
 )
 
@@ -345,7 +344,7 @@ func decodeDataBytes(data []byte) (int32, int32, string, error) {
 	return msgLen, frameLen, name, err
 }
 
-func decodeData(data types.IoBuffer) (int32, int32, string, error) {
+func decodeData(data buffer.IoBuffer) (int32, int32, string, error) {
 	bytesLen := data.Len()
 	bytes := data.Bytes()
 
@@ -356,7 +355,7 @@ func decodeData(data types.IoBuffer) (int32, int32, string, error) {
 	return decodeDataBytes(bytes)
 }
 
-func decodeRequest(ctx context.Context, data types.IoBuffer, oneway bool, message Message) (cmd interface{}, err error) {
+func decodeRequest(ctx context.Context, data buffer.IoBuffer, oneway bool, message Message) (cmd interface{}, err error) {
 	//fmt.Printf("====================decodeRequest==============\n")
 	msgLen, frameLen, name, err := decodeData(data)
 	if err != nil {
@@ -413,7 +412,7 @@ func decodeRequest(ctx context.Context, data types.IoBuffer, oneway bool, messag
 	return request, err
 }
 
-func decodeResponse(ctx context.Context, data types.IoBuffer, message Message) (cmd interface{}, err error) {
+func decodeResponse(ctx context.Context, data buffer.IoBuffer, message Message) (cmd interface{}, err error) {
 	msgLen, frameLen, _, err := decodeData(data)
 	if err != nil {
 		return nil, err

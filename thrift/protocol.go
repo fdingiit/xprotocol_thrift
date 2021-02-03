@@ -23,51 +23,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"mosn.io/mosn/pkg/log"
-	"mosn.io/mosn/pkg/protocol/xprotocol"
-	"mosn.io/mosn/pkg/types"
+	"mosn.io/api"
+	"mosn.io/api/protocol/xprotocol"
+	"mosn.io/api/types"
 	"mosn.io/pkg/buffer"
 )
-
-/**
- * Request command protocol for v1
- * 0     1     2           4           6           8          10           12          14         16
- * +-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
- * |proto| type| cmdcode   |ver2 |   requestID           |codec|        timeout        |  classLen |
- * +-----------+-----------+-----------+-----------+-----------+-----------+-----------+-----------+
- * |headerLen  | contentLen            |                             ... ...                       |
- * +-----------+-----------+-----------+                                                                                               +
- * |               className + header  + content  bytes                                            |
- * +                                                                                               +
- * |                               ... ...                                                         |
- * +-----------------------------------------------------------------------------------------------+
- *
- * proto: code for protocol
- * type: request/response/request oneway
- * cmdcode: code for remoting command
- * ver2:version for remoting command
- * requestID: id of request
- * codec: code for codec
- * headerLen: length of header
- * contentLen: length of content
- *
- * Response command protocol for v1
- * 0     1     2     3     4           6           8          10           12          14         16
- * +-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
- * |proto| type| cmdcode   |ver2 |   requestID           |codec|respstatus |  classLen |headerLen  |
- * +-----------+-----------+-----------+-----------+-----------+-----------+-----------+-----------+
- * | contentLen            |                  ... ...                                              |
- * +-----------------------+                                                                       +
- * |                         className + header  + content  bytes                                  |
- * +                                                                                               +
- * |                               ... ...                                                         |
- * +-----------------------------------------------------------------------------------------------+
- * respstatus: response status
- */
-
-func init() {
-	xprotocol.RegisterProtocol(ProtocolName, &ThriftProtocol{})
-}
 
 const (
 	MessageUnknown       byte = 0
@@ -85,14 +45,26 @@ type Message struct {
 	SeqId   int32
 }
 
-type ThriftProtocol struct{}
+type thriftProtocol struct{}
+
+func (proto *thriftProtocol) PoolMode() types.PoolMode {
+	panic("implement me")
+}
+
+func (proto *thriftProtocol) EnableWorkerPool() bool {
+	panic("implement me")
+}
+
+func (proto *thriftProtocol) GenerateRequestID(u *uint64) uint64 {
+	panic("implement me")
+}
 
 // types.Protocol
-func (proto *ThriftProtocol) Name() types.ProtocolName {
+func (proto *thriftProtocol) Name() api.Protocol {
 	return ProtocolName
 }
 
-func (proto *ThriftProtocol) Encode(ctx context.Context, model interface{}) (types.IoBuffer, error) {
+func (proto *thriftProtocol) Encode(ctx context.Context, model interface{}) (buffer.IoBuffer, error) {
 	ProtocolLogger.Infof("Encode: %+v\n", model)
 
 	switch frame := model.(type) {
@@ -101,7 +73,6 @@ func (proto *ThriftProtocol) Encode(ctx context.Context, model interface{}) (typ
 	case *Response:
 		return encodeResponse(ctx, frame)
 	default:
-		log.Proxy.Errorf(ctx, "[protocol][thrift] encode with unknown command : %+v", model)
 		return nil, xprotocol.ErrUnknownType
 	}
 }
@@ -121,7 +92,7 @@ func messageType(b byte) byte {
 	}
 }
 
-func (proto *ThriftProtocol) decodeMessage(ctx context.Context, data types.IoBuffer) (Message, error) {
+func (proto *thriftProtocol) decodeMessage(ctx context.Context, data buffer.IoBuffer) (Message, error) {
 	bytesLen := data.Len()
 	bytes := data.Bytes()
 
@@ -146,7 +117,7 @@ func (proto *ThriftProtocol) decodeMessage(ctx context.Context, data types.IoBuf
 	}, nil
 }
 
-func (proto *ThriftProtocol) Decode(ctx context.Context, data types.IoBuffer) (interface{}, error) {
+func (proto *thriftProtocol) Decode(ctx context.Context, data buffer.IoBuffer) (interface{}, error) {
 	ProtocolLogger.Infof("Decode: %+v\n", data)
 
 	if data.Len() >= MessageMinLen {
@@ -176,7 +147,7 @@ func (proto *ThriftProtocol) Decode(ctx context.Context, data types.IoBuffer) (i
 }
 
 // Heartbeater
-func (proto *ThriftProtocol) Trigger(requestId uint64) xprotocol.XFrame {
+func (proto *thriftProtocol) Trigger(requestId uint64) xprotocol.XFrame {
 	request := &Request{
 		RequestHeader: RequestHeader{
 			Protocol: ProtocolCode,
@@ -200,7 +171,7 @@ func (proto *ThriftProtocol) Trigger(requestId uint64) xprotocol.XFrame {
 	return request
 }
 
-func (proto *ThriftProtocol) Reply(request xprotocol.XFrame) xprotocol.XRespFrame {
+func (proto *thriftProtocol) Reply(request xprotocol.XFrame) xprotocol.XRespFrame {
 	response := &Response{
 		ResponseHeader: ResponseHeader{
 			Protocol: ProtocolCode,
@@ -224,7 +195,7 @@ func (proto *ThriftProtocol) Reply(request xprotocol.XFrame) xprotocol.XRespFram
 }
 
 // Hijacker
-func (proto *ThriftProtocol) Hijack(request xprotocol.XFrame, statusCode uint32) xprotocol.XRespFrame {
+func (proto *thriftProtocol) Hijack(request xprotocol.XFrame, statusCode uint32) xprotocol.XRespFrame {
 	return &Response{
 		ResponseHeader: ResponseHeader{
 			Protocol: ProtocolCode,
@@ -238,23 +209,37 @@ func (proto *ThriftProtocol) Hijack(request xprotocol.XFrame, statusCode uint32)
 	}
 }
 
-func (proto *ThriftProtocol) Mapping(httpStatusCode uint32) uint32 {
+const (
+	CodecExceptionCode    = 0
+	UnknownCode           = 2
+	DeserialExceptionCode = 3
+	SuccessCode           = 200
+	PermissionDeniedCode  = 403
+	RouterUnavailableCode = 404
+	InternalErrorCode     = 500
+	NoHealthUpstreamCode  = 502
+	UpstreamOverFlowCode  = 503
+	TimeoutExceptionCode  = 504
+	LimitExceededCode     = 509
+)
+
+func (proto *thriftProtocol) Mapping(httpStatusCode uint32) uint32 {
 	switch httpStatusCode {
 	case http.StatusOK:
 		return uint32(ResponseStatusSuccess)
-	case types.RouterUnavailableCode:
+	case RouterUnavailableCode:
 		return uint32(ResponseStatusNoProcessor)
-	case types.NoHealthUpstreamCode:
+	case NoHealthUpstreamCode:
 		return uint32(ResponseStatusConnectionClosed)
-	case types.UpstreamOverFlowCode:
+	case UpstreamOverFlowCode:
 		return uint32(ResponseStatusServerThreadpoolBusy)
-	case types.CodecExceptionCode:
+	case CodecExceptionCode:
 		//Decode or Encode Error
 		return uint32(ResponseStatusCodecException)
-	case types.DeserialExceptionCode:
+	case DeserialExceptionCode:
 		//Hessian Exception
 		return uint32(ResponseStatusServerDeserialException)
-	case types.TimeoutExceptionCode:
+	case TimeoutExceptionCode:
 		//Response Timeout
 		return uint32(ResponseStatusTimeout)
 	default:

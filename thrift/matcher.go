@@ -18,13 +18,8 @@
 package main
 
 import (
-	"mosn.io/mosn/pkg/protocol/xprotocol"
-	"mosn.io/mosn/pkg/types"
+	"mosn.io/api/types"
 )
-
-func init() {
-	xprotocol.RegisterMatcher(ProtocolName, thriftMatcher)
-}
 
 // predicate first byte '0x1'
 func thriftMatcher(data []byte) types.MatchResult {

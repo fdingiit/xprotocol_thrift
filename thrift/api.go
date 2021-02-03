@@ -18,14 +18,13 @@
 package main
 
 import (
-	"context"
-
-	"mosn.io/mosn/pkg/protocol/xprotocol"
-	"mosn.io/mosn/pkg/types"
+	"mosn.io/api"
+	"mosn.io/pkg/buffer"
+	"mosn.io/pkg/protocol/xprotocol"
 )
 
 // NewRpcRequest is a utility function which build rpc Request object of thrift protocol.
-func NewRpcRequest(requestId uint32, headers types.HeaderMap, data types.IoBuffer) *Request {
+func NewRpcRequest(requestId uint32, headers api.HeaderMap, data buffer.IoBuffer) *Request {
 	request := &Request{
 		RequestHeader: RequestHeader{
 			Protocol: ProtocolCode,
@@ -54,7 +53,7 @@ func NewRpcRequest(requestId uint32, headers types.HeaderMap, data types.IoBuffe
 }
 
 // NewRpcResponse is a utility function which build rpc Response object of thrift protocol.
-func NewRpcResponse(requestId uint32, statusCode uint16, headers types.HeaderMap, data types.IoBuffer) *Response {
+func NewRpcResponse(requestId uint32, statusCode uint16, headers api.HeaderMap, data buffer.IoBuffer) *Response {
 	response := &Response{
 		ResponseHeader: ResponseHeader{
 			Protocol: ProtocolCode,
@@ -82,37 +81,22 @@ func NewRpcResponse(requestId uint32, statusCode uint16, headers types.HeaderMap
 	return response
 }
 
-func Encode(ctx context.Context, model interface{}) (types.IoBuffer, error) {
-	proc := xprotocol.GetProtocol(ProtocolName)
-	return proc.Encode(ctx, model)
-}
+func LoadCodec() {
+	ProtocolLogger.Infof("LoadCodec...")
 
-func Decode(ctx context.Context, data types.IoBuffer) (interface{}, error) {
-	proc := xprotocol.GetProtocol(ProtocolName)
-	return proc.Decode(ctx, data)
-}
+	if err := xprotocol.RegisterProtocol(ProtocolName, &thriftProtocol{}); err != nil {
+		panic(err)
+	}
+	ProtocolLogger.Info("RegisterProtocol finished")
 
-func Name() types.ProtocolName {
-	proc := xprotocol.GetProtocol(ProtocolName)
-	return proc.Name()
-}
+	if err := xprotocol.RegisterMapping(ProtocolName, &thriftStatusMapping{}); err != nil {
+		panic(err)
+	}
+	ProtocolLogger.Info("RegisterMapping finished")
 
-func Trigger(requestId uint64) xprotocol.XFrame {
-	proc := xprotocol.GetProtocol(ProtocolName)
-	return proc.Trigger(requestId)
-}
-
-func Reply(request xprotocol.XFrame) xprotocol.XRespFrame {
-	proc := xprotocol.GetProtocol(ProtocolName)
-	return proc.Reply(request)
-}
-
-func Hijack(request xprotocol.XFrame, statusCode uint32) xprotocol.XRespFrame {
-	proc := xprotocol.GetProtocol(ProtocolName)
-	return proc.Hijack(request, statusCode)
-}
-
-func Mapping(httpStatusCode uint32) uint32 {
-	proc := xprotocol.GetProtocol(ProtocolName)
-	return proc.Mapping(httpStatusCode)
+	if err := xprotocol.RegisterMatcher(ProtocolName, thriftMatcher); err != nil {
+		panic(err)
+	}
+	ProtocolLogger.Info("RegisterMapping finished")
+	ProtocolLogger.Info("LoadCodec finished")
 }

@@ -18,8 +18,10 @@
 package main
 
 import (
-	"mosn.io/mosn/pkg/protocol/xprotocol"
-	"mosn.io/mosn/pkg/types"
+	"mosn.io/api"
+	xprotocolapi "mosn.io/api/protocol/xprotocol"
+	"mosn.io/pkg/buffer"
+	"mosn.io/pkg/protocol/xprotocol"
 )
 
 // RequestHeader is the header part of thrift v1 request
@@ -40,7 +42,7 @@ type RequestHeader struct {
 }
 
 // ~ HeaderMap
-func (h *RequestHeader) Clone() types.HeaderMap {
+func (h *RequestHeader) Clone() api.HeaderMap {
 	clone := &RequestHeader{}
 	*clone = *h
 
@@ -60,8 +62,8 @@ type Request struct {
 	rawHeader  []byte // sub slice of raw data, header bytes
 	rawContent []byte // sub slice of raw data, content bytes
 
-	Data    types.IoBuffer // wrapper of raw data
-	Content types.IoBuffer // wrapper of raw content
+	Data    buffer.IoBuffer // wrapper of raw data
+	Content buffer.IoBuffer // wrapper of raw content
 
 	ContentChanged bool // indicate that content changed
 }
@@ -79,26 +81,26 @@ func (r *Request) IsHeartbeatFrame() bool {
 	return r.RequestHeader.CmdCode == CmdCodeHeartbeat
 }
 
-func (r *Request) GetStreamType() xprotocol.StreamType {
+func (r *Request) GetStreamType() xprotocolapi.StreamType {
 	switch r.RequestHeader.CmdType {
 	case CmdTypeRequest:
-		return xprotocol.Request
+		return xprotocolapi.Request
 	case CmdTypeRequestOneway:
-		return xprotocol.RequestOneWay
+		return xprotocolapi.RequestOneWay
 	default:
-		return xprotocol.Request
+		return xprotocolapi.Request
 	}
 }
 
-func (r *Request) GetHeader() types.HeaderMap {
+func (r *Request) GetHeader() api.HeaderMap {
 	return r
 }
 
-func (r *Request) GetData() types.IoBuffer {
+func (r *Request) GetData() buffer.IoBuffer {
 	return r.Content
 }
 
-func (r *Request) SetData(data types.IoBuffer) {
+func (r *Request) SetData(data buffer.IoBuffer) {
 	// judge if the address unchanged, assume that proxy logic will not operate the original Content buffer.
 	if r.Content != data {
 		r.ContentChanged = true
@@ -124,7 +126,7 @@ type ResponseHeader struct {
 }
 
 // ~ HeaderMap
-func (h *ResponseHeader) Clone() types.HeaderMap {
+func (h *ResponseHeader) Clone() api.HeaderMap {
 	clone := &ResponseHeader{}
 	*clone = *h
 
@@ -144,8 +146,8 @@ type Response struct {
 	rawHeader  []byte // sub slice of raw data, header bytes
 	rawContent []byte // sub slice of raw data, content bytes
 
-	Data    types.IoBuffer // wrapper of raw data
-	Content types.IoBuffer // wrapper of raw content
+	Data    buffer.IoBuffer // wrapper of raw data
+	Content buffer.IoBuffer // wrapper of raw content
 
 	ContentChanged bool // indicate that content changed
 }
@@ -163,19 +165,19 @@ func (r *Response) IsHeartbeatFrame() bool {
 	return r.ResponseHeader.CmdCode == CmdCodeHeartbeat
 }
 
-func (r *Response) GetStreamType() xprotocol.StreamType {
-	return xprotocol.Response
+func (r *Response) GetStreamType() xprotocolapi.StreamType {
+	return xprotocolapi.Response
 }
 
-func (r *Response) GetHeader() types.HeaderMap {
+func (r *Response) GetHeader() api.HeaderMap {
 	return r
 }
 
-func (r *Response) GetData() types.IoBuffer {
+func (r *Response) GetData() buffer.IoBuffer {
 	return r.Content
 }
 
-func (r *Response) SetData(data types.IoBuffer) {
+func (r *Response) SetData(data buffer.IoBuffer) {
 	// judge if the address unchanged, assume that proxy logic will not operate the original Content buffer.
 	if r.Content != data {
 		r.ContentChanged = true

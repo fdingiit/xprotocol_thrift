@@ -22,17 +22,13 @@ import (
 	"errors"
 	"net/http"
 
-	"mosn.io/mosn/pkg/protocol/xprotocol"
-	"mosn.io/mosn/pkg/types"
+	"mosn.io/api"
+	"mosn.io/api/protocol/xprotocol"
 )
-
-func init() {
-	xprotocol.RegisterMapping(ProtocolName, &thriftStatusMapping{})
-}
 
 type thriftStatusMapping struct{}
 
-func (m *thriftStatusMapping) MappingHeaderStatusCode(ctx context.Context, headers types.HeaderMap) (int, error) {
+func (m *thriftStatusMapping) MappingHeaderStatusCode(ctx context.Context, headers api.HeaderMap) (int, error) {
 	cmd, ok := headers.(xprotocol.XRespFrame)
 	if !ok {
 		return 0, errors.New("no response status in headers")

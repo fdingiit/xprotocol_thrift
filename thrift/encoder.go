@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/binary"
 
-	"mosn.io/mosn/pkg/types"
 	"mosn.io/pkg/buffer"
 )
 
@@ -33,7 +32,7 @@ var pongCmd = []byte{
 	128, 1, 0, 2, 0, 0, 0, 4, 112, 111, 110, 103, 0, 0, 0, 0, 0,
 }
 
-func encodeRequest(ctx context.Context, request *Request) (types.IoBuffer, error) {
+func encodeRequest(ctx context.Context, request *Request) (buffer.IoBuffer, error) {
 	// 1. fast-path, use existed raw data
 	switch request.CmdCode {
 	case CmdCodeHeartbeat:
@@ -66,7 +65,7 @@ func encodeRequest(ctx context.Context, request *Request) (types.IoBuffer, error
 	return buf, nil
 }
 
-func encodeResponse(ctx context.Context, response *Response) (types.IoBuffer, error) {
+func encodeResponse(ctx context.Context, response *Response) (buffer.IoBuffer, error) {
 	switch response.CmdCode {
 	case CmdCodeHeartbeat:
 		response.Data = buffer.GetIoBuffer(len(pongCmd))
